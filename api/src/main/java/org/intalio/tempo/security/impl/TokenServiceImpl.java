@@ -64,6 +64,17 @@ public class TokenServiceImpl implements TokenService {
     TimeExpirationMap _userAndRoles = new TimeExpirationMap(1000 * 60 * 30, 1000 * 60);
     TimeExpirationMap _tokenAndProperties = new TimeExpirationMap(1000 * 60 * 30, 1000 * 60);
 
+  //By passing the authentication
+    private boolean byPassAuthentication;
+
+    public boolean isByPassAuthentication() {
+        return byPassAuthentication;
+    }
+
+    public void setByPassAuthentication(boolean byPassAuthentication) {
+        this.byPassAuthentication = byPassAuthentication;
+    }
+
     public TokenServiceImpl() {
         // nothing
     }
@@ -165,18 +176,20 @@ public class TokenServiceImpl implements TokenService {
     public String authenticateUser(String user, String password) throws AuthenticationException, RBACException, RemoteException {
         Property[] props;
         Property passwordProp;
-        BasicTextEncryptor encryptor = new BasicTextEncryptor();
-        // setPassword uses hash to decrypt password which should be same as hash of encryptor
-		encryptor.setPassword("IntalioEncryptedpassword#123");
-        // This is where we need to send the password in decrypted form
-		passwordProp = new Property(AuthenticationConstants.PROPERTY_PASSWORD, encryptor.decrypt(password));
-        props = new Property[] { passwordProp };
-
-        if (!_realms.authenticate(user, props)) {
-            throw new AuthenticationException("Authentication failed: User '" + user + "'");
+        if(!byPassAuthentication){
+            BasicTextEncryptor encryptor = new BasicTextEncryptor();
+            // setPassword uses hash to decrypt password which should be same as hash of encryptor
+            encryptor.setPassword("IntalioEncryptedpassword#123");
+            // This is where we need to send the password in decrypted form
+            passwordProp = new Property(AuthenticationConstants.PROPERTY_PASSWORD, encryptor.decrypt(password));
+            props = new Property[] { passwordProp };
+            if (!_realms.authenticate(user, props)) {
+                throw new AuthenticationException("Authentication failed: User '" + user + "'");
+            }
+            return createToken(user, password);
+        }else{
+            return createToken(user);
         }
-
-        return createToken(user, password);
     }
 
     /**
